@@ -22,3 +22,7 @@ Generators.constrain # constraints a value to range 0,255, also rounds it (this 
 Here's an example of a revolving color wheel going at 25 frames per second, with modified saturation and value
 l = LedString.new(pattern: Generators.color_wheel(30, {s: 0.75, v: 0.50}))
 l.loop(25){|x| x.shift!}
+
+dependencies:
+led_string.rb depends on the rubyserial gem
+ws2812_serial.ino depends on the FastLED library

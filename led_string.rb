@@ -72,7 +72,7 @@ class LedString
   end
 
   def clear!
-    pattern_fill [{}]
+    pattern_fill! [{}]
   end
 
 

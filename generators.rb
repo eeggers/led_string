@@ -1,6 +1,4 @@
 module Generators
-
-
   # generate a color wheel of frames many frames
   def self.color_wheel frames, options={s: 1, v: 1}
     step = 360.0 / (frames - 1)
