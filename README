@@ -1,0 +1,7 @@
+Just some tinkering with a ws2812b string using arduino and ruby.
+
+Arduino presents a serial interface which accepts the following commands:
+x:r,g,b;    -- set led x to r,g,b in buffer, eg: 0:255,255,255;
+render;     -- update leds per buffer contents
+fill;       -- fill the entire buffer with the same values of the 0th element
+list;       -- dump the contents of the buffer in a human-readable format over serial
