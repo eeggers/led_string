@@ -9,7 +9,7 @@ list;       -- dump the contents of the buffer in a human-readable format over s
 led_string.rb provides a way to interact with the Arduino:
 l = LedString.new # see file for options; various things can be supplied
 l.set!(0, {r: 255, g: 255, b: 255}) #set the 0th led to white and render
-l.pattern_fill!([{r:255}, {g: 255}, {b: 255}]) # fill the buffer with the alternating red/green/blue
+l.set_pattern!([{r:255}, {g: 255}, {b: 255}]) # set pattern and fill the buffer with the alternating red/green/blue and render
 l.loop{|x| x.shift!} # loop block forever, block param is ledstring itself, defaults to 30fps, can be changed
 
 generators.rb provies some functions for generating patterns:
@@ -19,9 +19,9 @@ There are other functions in here for various other tasks, eg:
 Generators.reflect pattern # contanates reversed version of pattern to pattern and returns
 Generators.constrain # constraints a value to range 0,255, also rounds it (this is configurable by an options hash)
 
-Here's an example of a revolving color wheel going at 25 frames per second, with modified saturation and value
-l = LedString.new(pattern: Generators.color_wheel(30, {s: 0.75, v: 0.50}))
-l.loop(25){|x| x.shift!}
+Here's an example of a revolving color wheel larger than the string, scrolling at 25 frames per second, with modified saturation and value
+l = LedString.new(pattern: Generators.color_wheel(120, {s: 0.75, v: 0.50}))
+l.loop(25){|x| x.next_frame!}
 
 dependencies:
 led_string.rb depends on the rubyserial gem
