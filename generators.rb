@@ -1,21 +1,21 @@
 module Generators
-  # generate a color wheel of frames many frames
-  def self.color_wheel frames, options={s: 1, v: 1}
-    step = 360.0 / (frames - 1)
+  # generate a color wheel of pixel_count many pixels
+  def self.color_wheel pixel_count, options={s: 1, v: 1}
+    step = 360.0 / (pixel_count - 1)
     results = []
-    frames.times do |i|
+    pixel_count.times do |i|
       results << hsv_to_rgb(options.merge({h: i * step}))
     end
     results
   end
 
-  # Creat a transition from rgb1 to rgb2 in frames many frames
-  def self.gradient rgb1, rgb2, frames
+  # Creat a transition from rgb1 to rgb2 in pixel_count many pixesl
+  def self.gradient rgb1, rgb2, pixel_count
     difference = diff rgb2, rgb1
 
-    steps = difference.map{|k, v| {k => v * 1.0 / (frames-1)}}.reduce(:merge)
+    steps = difference.map{|k, v| {k => v * 1.0 / (pixel_count-1)}}.reduce(:merge)
     results = []
-    frames.times do |i|
+    pixel_count.times do |i|
       d = steps.map{|k, v| {k => v * i}}.reduce(:merge)
       results << rgb1.merge(d){|k, v1, v2| constrain(v1 + v2)}
     end
