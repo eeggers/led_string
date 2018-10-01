@@ -23,7 +23,7 @@ module Generators
   end
 
   def self.reflect pattern
-    pattern.concat(pattern.reverse)
+    [].concat(pattern).concat(pattern.reverse)
   end
 
   def self.diff rgb1, rgb2

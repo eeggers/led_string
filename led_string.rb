@@ -28,17 +28,18 @@ class LedString
     @repeat    = options[:repeat]
     @verbose   = options[:verbose]
 
+    @frame_index = 0
+
     @serial = Serial.new @tty, @baudrate
 
     # initialize all of the LEDs to off
-    @leds = (0..@led_count-1).map{ {r:0, g:0, b:0} }
+    @leds = (0..@led_count-1).map{ blank_led }
 
     # and apply a pattern as appropriate
-    pattern_fill(@pattern, repeat: @repeat) if @pattern
+    set_pattern(@pattern, repeat: @repeat) if @pattern
 
     # finally display the string
-    sync_all
-    render!
+    sync_all!
   end
 
   # set individual LED, immediately sync and render
@@ -49,30 +50,33 @@ class LedString
     @leds[index]
   end
 
-  # set all data, immediately sync and render
+  # set buffer, immediately sync and render
   def set_all! rgb
     set_all rgb
     sync 0 # we can send less serial
     fill!  # data with this shortcut
-    render!
     @leds[0]
   end
 
-  # shift all data, immediately sync and render
+  # shift buffer, immediately sync and render
   def shift! direction=:right
     shift direction
-    sync_all
-    render!
+    sync_all!
   end
 
-  def pattern_fill! pattern, options={repeat:true}
-    pattern_fill pattern, options
-    sync_all
-    render!
+  def set_pattern! pattern, options={repeat:true}
+    set_pattern pattern, options
+    sync_all!
+  end
+
+  def next_frame! direction=:forward
+    next_frame direction
+    sync_all!
   end
 
   def clear!
-    pattern_fill! [{}]
+    clear
+    sync_all!
   end
 
 
@@ -97,11 +101,12 @@ class LedString
     end
   end
 
-  def pattern_fill pattern, options={repeat: true}
+  def set_pattern pattern, options={repeat: true}
     @pattern = pattern
+    @frame_index = 0
     @repeat = options[:repeat]
     @leds.each_with_index do |led, index|
-      tmp = {r:0,g:0,b:0}
+      tmp = blank_led
       if index < @pattern.length || @repeat
         tmp.merge! @pattern[index % @pattern.length]
       end
@@ -109,8 +114,18 @@ class LedString
     end
   end
 
+  def next_frame direction=:forward
+    if direction == :forward
+      @frame_index = @frame_index + 1 % @pattern.length
+    elsif direction == :backward
+      @frame_index = @frame_index - 1 < 0 ? @pattern.length - 1 : @frame_index - 1
+    end
+
+    @leds = (@pattern * (@led_count * 1.0 / @pattern.length).ceil).rotate(@frame_index).first @led_count
+  end
+
   def clear
-    pattern_fill [{}]
+    set_pattern [blank_led]
   end
 
   # iterate over the leds, yield block
@@ -129,6 +144,10 @@ class LedString
     end
   end
 
+  def blank_led
+    {r:0, g:0, b:0}
+  end
+
   #### SERIAL INTERFACE FUNCTIONS ###
 
   # sync specific led to string
@@ -142,9 +161,13 @@ class LedString
     render!
   end
 
+  def fill
+    serial_write "fill;"
+  end
+
   # fill the whole string with the value of the first pixel and render
   def fill!
-    serial_write "fill;"
+    fill
     render!
   end
 
