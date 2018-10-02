@@ -1,6 +1,7 @@
 module Generators
   # generate a color wheel of pixel_count many pixels
-  def self.color_wheel pixel_count, options={s: 1, v: 1}
+  def self.color_wheel pixel_count, options={}
+    options = {s: 1, v: 1}.merge options
     step = 360.0 / (pixel_count - 1)
     results = []
     pixel_count.times do |i|
