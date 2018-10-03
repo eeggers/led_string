@@ -12,7 +12,7 @@ class LedString2
   DEFAULT_OPTIONS = {
     led_count: 30,
     tty: "/dev/cu.usbmodem14101",
-    baudrate: 115200,
+    baudrate: 230400,
     verbose: false,
     leds: []
   }
@@ -75,9 +75,10 @@ class LedString2
   #### SERIAL INTERFACE FUNCTIONS ###
 
   # sync specific led to string
+  # format is iirrggbb (index, red, green, blue; 2 hex digits each
   def sync_single index
-    rgb_data = @leds[index]
-    serial_write "#{index}:#{rgb_data[:r]},#{rgb_data[:g]},#{rgb_data[:b]};"
+    led = @leds[index]
+    serial_write [index, led[:r], led[:g], led[:b]].map{|byte| "00#{byte.to_s(16)}"[-2..-1]}.join('')+';'
   end
 
   def sync_single! index
@@ -97,12 +98,12 @@ class LedString2
 
   # tell the led string to render
   def render!
-    serial_write "render;"
+    serial_write "r;"
   end
 
   # spit out the state as read from the LED string
   def list
-    serial_write "list;"
+    serial_write "l;"
     puts @serial.read(100000)
   end
 
