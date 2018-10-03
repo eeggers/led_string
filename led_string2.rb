@@ -4,9 +4,10 @@ class LedString2
   attr_reader   :led_count,
                 :tty,
                 :baudrate,
-                :serial
+                :serial,
+                :leds
   
-  attr_accessor :leds, :verbose
+  attr_accessor :verbose
 
   DEFAULT_OPTIONS = {
     led_count: 30,

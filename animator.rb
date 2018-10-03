@@ -1,7 +1,6 @@
 class Animator
 
-  attr_reader :led_count
-  attr_accessor :led_string, :pattern, :current_frame
+  attr_reader :led_string, :led_count, :pattern, :current_frame
 
   DEFAULT_OPTIONS = {
     pattern: [{r:0, g:0, b:0}] # this could be improved...
@@ -22,7 +21,6 @@ class Animator
 
   def led_string= led_string
     @led_string = led_string
-    @led_count = @led_string.led_count
   end
 
   def next_frame
@@ -58,6 +56,11 @@ class Animator
     end
   end
 
+  def reset!
+    @frame_index = -1
+    next_frame!
+  end
+
   def loop(fps=30) # block
     raise Error("Can't loop without block!") unless block_given?
     delay = 1.0 / fps
@@ -81,6 +84,6 @@ class Animator
       @frame_index = @frame_index - 1 < 0 ? @pattern.length - 1 : @frame_index - 1
     end
 
-    @current_frame = (@pattern * (@led_count * 1.0 / @pattern.length).ceil).rotate(@frame_index).first @led_count
+    @current_frame = (@pattern * (@led_string.led_count * 1.0 / @pattern.length).ceil).rotate(@frame_index).first @led_string.led_count
   end
 end
