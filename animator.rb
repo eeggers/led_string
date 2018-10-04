@@ -3,7 +3,7 @@ class Animator
   attr_reader :led_string, :led_count, :pattern, :current_frame
 
   DEFAULT_OPTIONS = {
-    pattern: [{r:0, g:0, b:0}] # this could be improved...
+    pattern: [[0,0,0]] # this could be improved...
   }
 
   def initialize led_string, options={}

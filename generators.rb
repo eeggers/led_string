@@ -2,33 +2,29 @@ module Generators
   # generate a color wheel of pixel_count many pixels
   def self.color_wheel pixel_count, options={}
     options = {s: 1, v: 1}.merge options
+    sv = [options[:s], options[:v]]
     step = 360.0 / (pixel_count - 1)
-    results = []
-    pixel_count.times do |i|
-      results << hsv_to_rgb(options.merge({h: i * step}))
+    (0..pixel_count-1).map do |i|
+      hsv_to_rgb([i*step]+sv)
     end
-    results
   end
 
   # Creat a transition from rgb1 to rgb2 in pixel_count many pixesl
   def self.gradient rgb1, rgb2, pixel_count
     difference = diff rgb2, rgb1
-
-    steps = difference.map{|k, v| {k => v * 1.0 / (pixel_count-1)}}.reduce(:merge)
-    results = []
-    pixel_count.times do |i|
-      d = steps.map{|k, v| {k => v * i}}.reduce(:merge)
-      results << rgb1.merge(d){|k, v1, v2| constrain(v1 + v2)}
+    step = difference.map{|v| v * 1.0 / (pixel_count-1)}
+    (0..pixel_count-1).map do |i|
+      d = step.map{|v| v * i}
+      rgb1.zip(d).map{|a| constrain(a.reduce :+)}
     end
-    results
   end
 
   def self.reflect pattern
-    [].concat(pattern).concat(pattern.reverse)
+    pattern + pattern.reverse
   end
 
   def self.diff rgb1, rgb2
-    rgb1.merge(rgb2){|k, v1, v2| v1 - v2}
+    rgb1.zip(rgb2).map{|a| a.reduce :-}
   end
 
   def self.constrain v, options={min: 0, max: 255, round: true}
@@ -39,9 +35,8 @@ module Generators
   end
 
   def self.hsv_to_rgb hsv
-    h = hsv[:h] % 360 # support laziness so we don't need to be strict about 0 <= h < 360
-    s = hsv[:s] # 0 <= s <= 1
-    v = hsv[:v] # 0 <= v <= 1
+    h,s,v = hsv
+    h %= 360
 
     # some intermediate values
     c = v * s
@@ -63,7 +58,11 @@ module Generators
       r,g,b = [c,0,x]
     end
 
-    {r: constrain((r+m) * 255), g: constrain((g+m) * 255), b: constrain((b+m) * 255)}
+    r = constrain((r + m) * 255)
+    g = constrain((g + m) * 255)
+    b = constrain((b + m) * 255)
+
+    [r,g,b]
   end
 
 end

@@ -84,7 +84,8 @@ class LedString
   # format is iirrggbb; (index, red, green, blue; 2 hex digits each)
   def sync_single index
     led = @leds[index]
-    serial_write "#{[index, _gamma(led[:r]), _gamma(led[:g]), _gamma(led[:b])].map{|byte| "00#{byte.to_s(16)}"[-2..-1]}.join};"
+    tmp = [index, _gamma(led[0]), _gamma(led[1]), _gamma(led[2])].map{|byte| "00#{byte.to_s(16)}"[-2..-1]}
+    serial_write "#{tmp.join};"
   end
 
   def sync_single! index
@@ -127,7 +128,7 @@ class LedString
   end
 
   def blank_led
-    {r: 0, g: 0, b: 0}
+    [0,0,0]
   end
 
 end
