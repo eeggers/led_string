@@ -6,7 +6,7 @@
 //#define LIST_MODE
 
 #define LED_COUNT 30
-#define LED_PIN 3
+#define LED_PIN 11
 
 byte chars_to_byte(unsigned char, unsigned char);
 void display_led(int);
@@ -25,11 +25,11 @@ void setup() {
 void loop() {
   while (Serial.available() > 0) {
     Serial.readStringUntil(';').toCharArray(command, 25);
-    if (command[0] == 'r') {
+    if (command[0] == 'r' && command[1] == '\0') {
       FastLED.show();
     } 
     #ifdef LIST_MODE
-    else if (command[0] == 'l') {
+    else if (command[0] == 'l' && command[1] == '\0') {
       Serial.println("---LIST---");
       for (int i = 0; i < LED_COUNT; i++) {
         display_led(i);
