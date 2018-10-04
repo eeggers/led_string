@@ -1,200 +1,133 @@
 require 'rubyserial'
+load 'gamma.rb'
 
 class LedString
-  attr_accessor :led_count,
+  attr_reader   :led_count,
                 :tty,
                 :baudrate,
                 :serial,
                 :leds,
-                :pattern,
-                :repeat,
-                :verbose
+                :gamma
+  
+  attr_accessor :verbose, :gamma_correction
 
   DEFAULT_OPTIONS = {
     led_count: 30,
     tty: "/dev/cu.usbmodem14101",
-    baudrate: 115200,
-    pattern: nil,
-    repeat: true,
-    verbose: false
+    baudrate: 230400,
+    verbose: false,
+    gamma_correction: true,
+    gamma: 2.5,
+    leds: []
   }
 
   def initialize options={}
     options = DEFAULT_OPTIONS.merge options
-    @led_count = options[:led_count]
-    @tty       = options[:tty]
-    @baudrate  = options[:baudrate]
-    @pattern   = options[:pattern]
-    @repeat    = options[:repeat]
-    @verbose   = options[:verbose]
-
-    @frame_index = 0
+    @led_count        = options[:led_count]
+    @tty              = options[:tty]
+    @baudrate         = options[:baudrate]
+    @pattern          = options[:pattern]
+    @repeat           = options[:repeat]
+    @verbose          = options[:verbose]
+    @gamma_correction = options[:gamma_correction]
+    self.gamma        = options[:gamma]
 
     @serial = Serial.new @tty, @baudrate
 
-    # initialize all of the LEDs to off
-    @leds = (0..@led_count-1).map{ blank_led }
-
-    # and apply a pattern as appropriate
-    set_pattern(@pattern, repeat: @repeat) if @pattern
+    # initialize the leds
+    self.leds = options[:leds]
 
     # finally display the string
-    sync_all!
+    sync!
   end
 
-  # set individual LED, immediately sync and render
-  def set! index, rgb
-    set index, rgb
-    sync index
-    render!
-    @leds[index]
+  # if extras are supplied, ignore them, if not enough are supplied, fill with zeros
+  def leds= leds
+    @leds = leds.clone.fill(blank_led, leds.length..@led_count-1).first(@led_count)
   end
 
-  # set buffer, immediately sync and render
-  def set_all! rgb
-    set_all rgb
-    sync 0 # we can send less serial
-    fill!  # data with this shortcut
-    @leds[0]
+  def gamma= gamma
+    @gamma = gamma
+    @gamma_lookup = Gamma.generate_table(256, @gamma).map{|x| (x * 255).round}
   end
 
-  # shift buffer, immediately sync and render
-  def shift! direction=:right
-    shift direction
-    sync_all!
+  def set_leds leds
+    self.leds = leds
   end
 
-  def set_pattern! pattern, options={repeat:true}
-    set_pattern pattern, options
-    sync_all!
+  def set_leds! leds
+    set_leds leds
+    sync!
   end
 
-  def next_frame! direction=:forward
-    next_frame direction
-    sync_all!
+  def set_led n, led
+    @leds[n] = led
+  end
+
+  def set_led! n, led
+    set_led n, led
+    sync_single! n
   end
 
   def clear!
     clear
-    sync_all!
-  end
-
-
-  #same as above, but merely update the local state
-  def set index, rgb
-    @leds[index].merge! rgb
-  end
-
-  def set_all rgb
-    @leds.each_with_index do |led, index|
-      set index, rgb
-    end
-    @leds.first
-  end
-
-  def shift direction=:right
-    case direction
-    when :left 
-      @leds.push @leds.shift
-    when :right
-      @leds.unshift @leds.pop
-    end
-  end
-
-  def set_pattern pattern, options={repeat: true}
-    @pattern = pattern
-    @frame_index = 0
-    @repeat = options[:repeat]
-    @leds.each_with_index do |led, index|
-      tmp = blank_led
-      if index < @pattern.length || @repeat
-        tmp.merge! @pattern[index % @pattern.length]
-      end
-      led.merge! tmp
-    end
-  end
-
-  def next_frame direction=:forward
-    if direction == :forward
-      @frame_index = @frame_index + 1 % @pattern.length
-    elsif direction == :backward
-      @frame_index = @frame_index - 1 < 0 ? @pattern.length - 1 : @frame_index - 1
-    end
-
-    @leds = (@pattern * (@led_count * 1.0 / @pattern.length).ceil).rotate(@frame_index).first @led_count
+    sync!
   end
 
   def clear
-    set_pattern [blank_led]
-  end
-
-  # iterate over the leds, yield block
-  def each
-    @leds.each_with_index do |led, index|
-      yield led, index
-    end
-    nil
-  end
-
-  # yield supplied block with 1/fps s delay
-  def loop fps=30
-    while true
-      yield(self)
-      sleep 1.0 / fps
-    end
-  end
-
-  def blank_led
-    {r:0, g:0, b:0}
+    self.leds= []
   end
 
   #### SERIAL INTERFACE FUNCTIONS ###
 
   # sync specific led to string
-  def sync index
-    rgb_data = @leds[index]
-    serial_write "#{index}:#{rgb_data[:r]},#{rgb_data[:g]},#{rgb_data[:b]};"
+  # format is iirrggbb; (index, red, green, blue; 2 hex digits each)
+  def sync_single index
+    led = @leds[index]
+    serial_write "#{[index, _gamma(led[:r]), _gamma(led[:g]), _gamma(led[:b])].map{|byte| "00#{byte.to_s(16)}"[-2..-1]}.join};"
   end
 
-  def sync! index
-    sync index
-    render!
-  end
-
-  def fill
-    serial_write "fill;"
-  end
-
-  # fill the whole string with the value of the first pixel and render
-  def fill!
-    fill
+  def sync_single! index
+    sync_single index
     render!
   end
 
   # sync all leds to string
-  def sync_all
-    @leds.each_with_index {|_, index| sync index}
+  def sync
+    @leds.each_with_index {|_, index| sync_single index}
   end
 
-  def sync_all!
-    sync_all
+  def sync!
+    sync
     render!
   end
 
   # tell the led string to render
   def render!
-    serial_write "render;"
+    serial_write "r;"
   end
 
   # spit out the state as read from the LED string
   def list
-    serial_write "list;"
+    serial_write "l;"
     puts @serial.read(100000)
   end
 
   def serial_write s
     puts "serial_write: #{s}" if @verbose
     @serial.write s
+    nil
+  end
+
+  private
+
+  def _gamma n
+    return n unless @gamma_correction
+    @gamma_lookup[n]
+  end
+
+  def blank_led
+    {r: 0, g: 0, b: 0}
   end
 
 end

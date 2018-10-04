@@ -1,5 +1,5 @@
 LED_FILES = [
-  'led_string2.rb',
+  'led_string.rb',
   'animator.rb',
   'generators.rb',
   'gamma.rb'
