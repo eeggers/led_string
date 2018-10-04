@@ -79,7 +79,7 @@ class Animator
 
   def _next_frame direction
     if direction == :forward
-      @frame_index = @frame_index + 1 % @pattern.length
+      @frame_index = (@frame_index + 1) % @pattern.length
     elsif direction == :backward
       @frame_index = @frame_index - 1 < 0 ? @pattern.length - 1 : @frame_index - 1
     end
