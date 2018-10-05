@@ -3,7 +3,7 @@ module Generators
   def self.color_wheel pixel_count, options={}
     options = {s: 1, v: 1}.merge options
     sv = [options[:s], options[:v]]
-    step = 360.0 / (pixel_count - 1)
+    step = 360.0 / pixel_count
     (0..pixel_count-1).map do |i|
       hsv_to_rgb([i*step]+sv)
     end
