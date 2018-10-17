@@ -15,6 +15,7 @@ class Animator
   def pattern= pattern
     @frame_index = -1
     @pattern = pattern
+    @pattern_is_not_series_of_frames = !(@pattern.first.is_a?(Array) && @pattern.first.first.is_a?(Array))
     next_frame
     nil
   end
@@ -84,6 +85,11 @@ class Animator
       @frame_index = @frame_index - 1 < 0 ? @pattern.length - 1 : @frame_index - 1
     end
 
-    @current_frame = (@pattern * (@led_string.led_count * 1.0 / @pattern.length).ceil).rotate(@frame_index).first @led_string.led_count
+    if @pattern_is_not_series_of_frames #in this case we just slide rotate by the frame index and whatever
+      @current_frame = (@pattern * (@led_string.led_count * 1.0 / @pattern.length).ceil).rotate(@frame_index).first @led_string.led_count
+    else
+      @current_frame = @pattern[@frame_index]
+    end
+    @current_frame
   end
 end
