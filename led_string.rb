@@ -9,16 +9,17 @@ class LedString
                 :leds,
                 :gamma
   
-  attr_accessor :verbose, :gamma_correction
+  attr_accessor :verbose, :gamma_correction, :color_adjust
 
   DEFAULT_OPTIONS = {
     led_count: 30,
-    tty: "/dev/cu.usbmodem14101",
-    baudrate: 230400,
+    tty: "/dev/tty.SLAB_USBtoUART",
+    baudrate: 115200,
     verbose: false,
     gamma_correction: true,
     gamma: 2.5,
-    leds: []
+    leds: [],
+    color_adjust: [1,1,1]
   }
 
   def initialize options={}
@@ -31,6 +32,7 @@ class LedString
     @verbose          = options[:verbose]
     @gamma_correction = options[:gamma_correction]
     self.gamma        = options[:gamma]
+    @color_adjust     = options[:color_adjust]
 
     @serial = Serial.new @tty, @baudrate
 
@@ -84,7 +86,13 @@ class LedString
   # format is iirrggbb; (index, red, green, blue; 2 hex digits each)
   def sync_single index
     led = @leds[index]
-    tmp = [index, _gamma(led[0]), _gamma(led[1]), _gamma(led[2])].map{|byte| "00#{byte.to_s(16)}"[-2..-1]}
+
+    r = _gamma(_color_adjust(0, led[0]))
+    g = _gamma(_color_adjust(1, led[1]))
+    b = _gamma(_color_adjust(2, led[2]))
+
+
+    tmp = [index, r, g, b].map{|byte| "00#{byte.to_s(16)}"[-2..-1]}
     serial_write "#{tmp.join};"
   end
 
@@ -103,15 +111,29 @@ class LedString
     render!
   end
 
+  def load!
+    load
+    render!
+  end
+
   # tell the led string to render
   def render!
     serial_write "r;"
   end
 
   # spit out the state as read from the LED string
-  def list
+  def dump
+    serial_write "d;"
+    puts @serial.read(1000000)
+  end
+
+  def save
+    sync
+    serial_write "s;"
+  end
+
+  def load
     serial_write "l;"
-    puts @serial.read(100000)
   end
 
   def serial_write s
@@ -121,6 +143,10 @@ class LedString
   end
 
   private
+
+  def _color_adjust i, v
+    (@color_adjust[i] * v).round
+  end
 
   def _gamma n
     return n unless @gamma_correction
