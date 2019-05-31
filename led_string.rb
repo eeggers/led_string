@@ -2,6 +2,11 @@ require 'rubyserial'
 load 'gamma.rb'
 
 class LedString
+  TYPES = [
+    RGB = :RGB,
+    RGBW = :RGBW
+  ]
+
   attr_reader   :led_count,
                 :tty,
                 :baudrate,
@@ -13,18 +18,19 @@ class LedString
 
   DEFAULT_OPTIONS = {
     led_count: 30,
+    type: RGB,
     tty: "/dev/tty.SLAB_USBtoUART",
     baudrate: 115200,
     verbose: false,
     gamma_correction: true,
-    gamma: 2.5,
-    leds: [],
-    color_adjust: [1,1,1]
+    gamma: 2.2,
+    leds: []
   }
 
   def initialize options={}
     options = DEFAULT_OPTIONS.merge options
     @led_count        = options[:led_count]
+
     @tty              = options[:tty]
     @baudrate         = options[:baudrate]
     @pattern          = options[:pattern]
@@ -32,7 +38,7 @@ class LedString
     @verbose          = options[:verbose]
     @gamma_correction = options[:gamma_correction]
     self.gamma        = options[:gamma]
-    @color_adjust     = options[:color_adjust]
+    @type             = options[:type]
 
     @serial = Serial.new @tty, @baudrate
 
@@ -87,12 +93,9 @@ class LedString
   def sync_single index
     led = @leds[index]
 
-    r = _gamma(_color_adjust(0, led[0]))
-    g = _gamma(_color_adjust(1, led[1]))
-    b = _gamma(_color_adjust(2, led[2]))
+    tmp = [index] + led.map{|v|_gamma(v)};
 
-
-    tmp = [index, r, g, b].map{|byte| "00#{byte.to_s(16)}"[-2..-1]}
+    tmp = tmp.map{|byte| "00#{byte.to_s(16)}"[-2..-1]}
     serial_write "#{tmp.join};"
   end
 
@@ -122,9 +125,9 @@ class LedString
   end
 
   # spit out the state as read from the LED string
+  # need to tail -f the tty device to actually see this
   def dump
     serial_write "d;"
-    puts @serial.read(1000000)
   end
 
   def save
@@ -144,17 +147,17 @@ class LedString
 
   private
 
-  def _color_adjust i, v
-    (@color_adjust[i] * v).round
-  end
-
   def _gamma n
     return n unless @gamma_correction
     @gamma_lookup[n]
   end
 
   def blank_led
-    [0,0,0]
+    if @type == RGBW
+      [0,0,0,0]
+    else
+      [0,0,0]
+    end
   end
 
 end
