@@ -1,5 +1,5 @@
 require 'rubyserial'
-load 'gamma.rb'
+require_relative './gamma.rb'
 
 class LedString
   TYPES = [
@@ -24,7 +24,8 @@ class LedString
     verbose: false,
     gamma_correction: true,
     gamma: 2.2,
-    leds: []
+    leds: [],
+    silent_start: false
   }
 
   def initialize options={}
@@ -46,7 +47,7 @@ class LedString
     self.leds = options[:leds]
 
     # finally display the string
-    sync!
+    sync! unless options[:silent_start]
   end
 
   # if extras are supplied, ignore them, if not enough are supplied, fill with zeros
@@ -125,9 +126,37 @@ class LedString
   end
 
   # spit out the state as read from the LED string
-  # need to tail -f the tty device to actually see this
   def dump
+    serial_read # clear out buffer
+    chunks = []
     serial_write "d;"
+    sleep 1
+    extract_dump serial_read
+  end
+
+  def extract_dump dump
+    regex = /([0-9a-fA-F]+):([0-9a-fA-F]+);/
+    lines = dump.split("\n").select{|l| l =~ regex}
+    lines.map do |line|
+      match = line.match regex
+      if match
+         match[2].to_i(16)
+      else
+        0
+      end
+    end.map do |i|
+      int_to_arr i
+    end
+  end
+
+  def int_to_arr i
+    arr = [
+      (i & 0xFF0000) >> 16,
+      (i & 0xFF00) >> 8,
+      (i & 0xFF)
+    ]
+    arr << ((i & 0xFF000000) >> 24) if @type == RGBW
+    arr
   end
 
   def save
@@ -143,6 +172,15 @@ class LedString
     puts "serial_write: #{s}" if @verbose
     @serial.write s
     nil
+  end
+
+  def serial_read
+    chunks = []
+    chunk = nil
+    until (chunk = @serial.read(512)).empty?
+      chunks << chunk
+    end
+    chunks.join ""
   end
 
   private

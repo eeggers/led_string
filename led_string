@@ -1,0 +1,13 @@
+#!/Users/eeggers/.rvm/rubies/ruby-2.4.6/bin/ruby
+
+require 'irb'
+require 'irb/completion'
+
+require_relative "../led_string/main.rb"
+
+DEFAULT = [[200,0,0,190]]*30 + [[64,64,64,224]]*30 + [[150,0,120,150]]*30
+ 
+ls = LedString.new led_count: 90, type: LedString::RGBW, leds: DEFAULT
+a = Animator.new ls
+
+binding.irb
