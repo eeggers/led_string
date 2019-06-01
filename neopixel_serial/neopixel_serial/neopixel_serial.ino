@@ -7,11 +7,12 @@
 #define LED_COUNT 256
 #define LED_PIN 5
 
-#define PERIODIC_REFRESH_INTERVAL 1000000 // loop iterations
+#define PERIODIC_REFRESH_INTERVAL 1000 //millis
 
 char command[25];
-uint32_t periodic_refresh_counter = 0;
-
+uint32_t elapsed_time = 0,
+         last_periodic_refresh = 0;
+         
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRBW + NEO_KHZ800);
 
@@ -55,9 +56,14 @@ void loop() {
       set_led(command);
     }
   }
-  // hack 
-  if (++periodic_refresh_counter == PERIODIC_REFRESH_INTERVAL) {
-    periodic_refresh_counter = 0;
+  // hack
+  // if enough time has ellapsed since the last time we did our scheduled refresh,
+  // update the time and refresh. The second condition is to deal with the rollover
+  // that happens approximately every 50 days, but this is probably a bit silly to
+  // worry about.
+  elapsed_time = millis();
+  if (elapsed_time > last_periodic_refresh + PERIODIC_REFRESH_INTERVAL || elapsed_time < last_periodic_refresh) {
+    last_periodic_refresh = elapsed_time;
     render();
   }
 }
