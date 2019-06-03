@@ -1,0 +1,46 @@
+<html>
+  <head></head>
+  <body>
+
+    <style>
+      body {
+        font-size: 24;
+      }
+    </style>
+
+    <script>
+      function request(path) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", path);
+        xhr.onload = function () {
+          document.getElementById("status").innerHTML = xhr.responseText; 
+        }
+        xhr.send();
+      }
+
+    </script>
+
+    <p>
+      What color would you like? <br>
+    </p>
+
+    <ul>
+      <li><a href="javascript:request('led_string/red')">red</a></li>
+      <li><a href="javascript:request('led_string/green')">green</a></li>
+      <li><a href="javascript:request('led_string/blue')">blue</a></li>
+      <li><a href="javascript:request('led_string/violet')">violet</a></li>
+      <li><a href="javascript:request('led_string/warmwhite')">warmwhite</a></li>
+      <li><a href="javascript:request('led_string/brightwhite')">brightwhite</a></li>
+      <li><a href="javascript:request('led_string/default')">default</a></li>
+    </ul>
+
+    <br>
+    <br>
+    <a href="javascript:request('led_string/save')">save</a> | 
+    <a href="javascript:request('led_string/load')">load</a> | 
+    <a href="javascript:request('led_string/dump')">dump</a>
+    <br>
+    <div id="status"></div>
+
+  </body>
+</html>
