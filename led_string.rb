@@ -160,7 +160,6 @@ class LedString
   end
 
   def save
-    sync
     serial_write "s;"
   end
 
